@@ -55,7 +55,7 @@ router.get("/api/users/:id", async (req, res) => {
         .json({ message: `User with ID ${req.params.id} not found` });
     }
   } catch (error) {
-    res.status(500).json({ message: `Error feching users, ${error}` });
+    res.status(500).json({ message: `Error feching userss, ${error}` });
   }
 });
 
@@ -71,93 +71,33 @@ router.delete("/api/users/:id", async (req, res) => {
   }
 });
 
-// router.put("/api/users/:id", async (req, res) => {
-//   try {
-//     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
-//       new: true,
-//     });
-//     if (updatedUser) {
-//       res.status(200).json(updatedUser);
-//     } else {
-//       res.status(404).json({
-//         message: `User with ID ${req.params.id} not found`,
-//       });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ message: `Error feching users, ${error}` });
-//   }
-// });
-
-router.put("/api/users/:id", async (req, res) => {
+router.post("/api/users/", async (req, res) => {
+  const { username, password, biodata, jobRole } = req.body;
+  console.log(req.body);
   try {
-    const updateData = { ...req.body };
-    if (updateData) {
-      const salt = await bcrypt.genSalt(10);
-      updateData.password = await bcrypt.hash(updateData.password, salt);
-    }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      updateData,
-      { new: true }
-    );
-
-    if (updatedUser) {
-      res.status(200).json(updatedUser);
-    } else {
-      res
-        .status(400)
-        .json({ message: `User with ID ${req.params.id} not found ` });
-    }
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      biodata,
+      jobRole,
+    });
+    const savedUser = await newUser.save();
+    res.status(200).json(savedUser);
   } catch (error) {
-    res.status(500).json({ message: `Error editing  users, ${error} ` });
+    res.status(400).json({ message: ` Error creating a new user : ${error}` });
   }
 });
 
-
-// router.post("/api/users/", async (req, res) => {
-//   const newUser = new User({
-//     userName: req.body.userName,
-//     password: req.body.password,
-//     jobRole: req.body.jobRole,
-//     description:req.body.description,
-//   });
-
-//   try {
-//     const savedUser = await newUser.save();
-//     res.status(200).json(savedUser);
-//   } catch (error) {
-//     res.status(400).json({ message: `Error creating new user: ${error}` });
-//   }
-// });
-
-router.post("/api/users/",async (req,res)=>{
-  const {userName,password,jobRole,description}=req.body
-
-  try{
-    const salt=await bcrypt.genSalt(10)
-    const hashedPassword=await bcrypt.hash(password,salt)
-
-    const newUser=new User({
-      userName,
-      password:hashedPassword,
-      jobRole,
-      description,
-    })
-    const savedUser=await newUser.save()
-    res.status(200).json(savedUser)
-  }catch(error){
-    res.status(400).json({ message: `Error creating new user: ${error}` })
-  }
-})
-
 router.post("/api/users/login", async (req, res) => {
   try {
-    const { userName, password } = req.body;
-    const user = await User.findOne({ userName });
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
 
     if (!user)
-      return res.status(404).json({ message: `User ${userName} not found` });
+      return res.status(404).json({ message: `User ${username} not found` });
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(404).json({ message: "invalid password" });
@@ -165,6 +105,30 @@ router.post("/api/users/login", async (req, res) => {
     res.status(200).json({ message: `login successfull`, user });
   } catch (error) {
     res.status(500).json({ message: `Login error ${error}` });
+  }
+});
+
+router.put("/api/users/:id", async (req, res) => {
+  try {
+    const updateData = { ...req.body };
+    if (updateData.password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(updateData.password, salt);
+    }
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+    if (updatedUser) {
+      res.status(200).json(updatedUser);
+    } else {
+      res
+        .status(400)
+        .json({ message: `User with ID ${req.params.id} not found` });
+    }
+  } catch (error) {
+    res.status(500).json({ message: `Error editing user ${error}` });
   }
 });
 
